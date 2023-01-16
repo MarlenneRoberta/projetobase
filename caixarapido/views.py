@@ -1,15 +1,16 @@
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.contrib.auth.models import User
-from rolepermissions.roles import assign_role
+
+from rolepermissions.roles import assign_role, get_user_roles
 from rolepermissions.roles import revoke_permission, grant_permission
 from rolepermissions.decorators import has_role_decorator, has_permission_decorator
 # Create your views here.
 
 @has_role_decorator('gerente')
 def caixarapido(request):
-    
-    return HttpResponse('ver cadastros ativos e encerrados')
+    print(get_user_roles(request.user))
+    return HttpResponse(request.user, 'ver cadastros ativos e encerrados')
 
 
 @has_permission_decorator('cliente')
