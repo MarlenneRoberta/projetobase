@@ -10,6 +10,7 @@ from rolepermissions.decorators import has_role_decorator, has_permission_decora
 @has_role_decorator('gerente')
 def caixarapido(request):
     print(get_user_roles(request.user))
+    grant_permission(request.user, 'cadastros_ativos', 'cadastros_encerrados', 'reativar_cadastro', 'gerenciar_usuario', 'gerenciar_conta', 'gerenciar_transacoes')
     return HttpResponse(request.user, 'ver cadastros ativos e encerrados')
 
 
@@ -18,8 +19,9 @@ def editar_cadastro(request):
 
     revoke_permission(request.user, 'ver_cadastros_ativos', 'ver_cadastros_encerrados', 'reativar_cadastro')
     grant_permission(request.user, 'gerenciar_usuario', 'gerenciar_conta', 'gerenciar_transacoes')
-    return HttpResponse('Altere aqui seus dados')
+    return HttpResponse(request.user, 'Altere aqui seus dados')
 
+@has_permission_decorator('gerente', 'cliente')
 def criar_usuario(request):
     user = User.obects.create_user(username="caio", password="1234")
     user.save()
