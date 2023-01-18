@@ -34,12 +34,14 @@ ALLOWED_HOSTS = ['127.0.0.1', '.pythonanywhere.com']
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
-    'django.contrib.contenttypes',
+    'django.contrib.contenttypes.fields.GenericForeignKey',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'caixarapido',
-    'rolepermissions'
+    'rolepermissions',
+    'bop',
+    'taggit'
 ]
 
 MIDDLEWARE = [

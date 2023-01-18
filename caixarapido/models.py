@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, PasswordChangeForm, UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.db import models
-
+from taggit.managers import TaggableManager
 from django.urls import include, path
 from rolepermissions.decorators import has_permission_decorator
 from datetime import datetime
@@ -91,6 +91,14 @@ class Gerenciar_conta(models.Model):
 
     #SOLICITAR EXTRATO
 class Historico(UserCreationForm):
+
+    def historico_operacao():
+        operacao = UserCreationForm()
+        if operacao.is_valid():
+           operacao.save()
+        return redirect ('index')#alterar destino
+           
+    
     class Meta:
         ordering = ('descricao',)
 
@@ -99,15 +107,15 @@ class Historico(UserCreationForm):
         def __unicode__(self):
             return (self.descricao)
 
-    class Pessoa(models.Model):
-        class Meta:
-            ordering = ('cpf',)
+class Pessoa(models.Model):
+    class Meta:
+        ordering = ('cpf',)
 
-        cpf = models.CharField(max_length=11)
-        senha = models.CharField(max_length=6, blank=True)
+    cpf = models.CharField(max_length=11)
+    senha = models.CharField(max_length=6, blank=True)
 
-        def __unicode__(self):
-            return self.cpf
+    def __unicode__(self):
+        return self.cpf
 
 CONTA_OPERACAO_DEBITO = 'd'
 CONTA_OPERACAO_CREDITO = 'c'
@@ -124,13 +132,14 @@ CONTA_STATUS_CHOICES = (
 )
 
 
+
 class Conta(models.Model):
     class Meta:
         
         ordering = ('-data_vencimento', 'valor')
 
-        pessoa = models.ForeignKey('Pessoa', on_delete=models.SET (Historico))
-        historico = models.ForeignKey('Historico', on_delete=models.SET (Historico))
+        pessoa = models.ForeignKey('Pessoa', on_delete=models.SET (Historico.historico_operacao()))
+        historico = models.ForeignKey('Historico', on_delete=models.SET (Historico.historico_operacao()))
         data_vencimento = models.DateField()
         data_pagamento = models.DateField(null=True, blank=True)
         valor = models.DecimalField(max_digits=15, decimal_places=2)
@@ -151,68 +160,68 @@ class Conta(models.Model):
 
         descricao = models.TextField(blank=True)
 
-        class ContaPagar(Container):
-            def save(self, *args, **kwargs):
-                self.operacao = CONTA_OPERACAO_DEBITO
-                super(self.ContaPagar, self).save(*args, **kwargs)
+class ContaPagar(Container):
+    def save(self, *args, **kwargs):
+        self.operacao = CONTA_OPERACAO_DEBITO
+        super(self.ContaPagar, self).save(*args, **kwargs)
 
-        class ContaReceber(Container):
-            def save(self, *args, **kwargs):
-                self.operacao = CONTA_OPERACAO_CREDITO
-                super(self.ContaReceber, self).save(*args, **kwargs)
+class ContaReceber(Container):
+    def save(self, *args, **kwargs):
+        self.operacao = CONTA_OPERACAO_CREDITO
+        super(self.ContaReceber, self).save(*args, **kwargs)
 
-        class Pagamento(models.Model):
-            class Meta:
-                abstract = True
+class Pagamento(models.Model):
+    class Meta:
+        abstract = True
 
-            data_pagamento = models.DateField()
-            valor = models.DecimalField(max_digits=15, decimal_places=2)
+        data_pagamento = models.DateField()
+        valor = models.DecimalField(max_digits=15, decimal_places=2)
 
-        class PagamentoPago(Pagamento):
-            conta = models.ForeignKey('ContaPagar', on_delete=models.SET (Historico))
+class PagamentoPago(Pagamento):
+    conta = models.ForeignKey('ContaPagar', on_delete=models.SET (Historico.historico_operacao()))
 
-            transferencia_realizada = models.ForeignKey('ContaPagar', on_delete=models.SET (Historico))
-            saque = models.ForeignKey('ContaPagar', on_delete=models.SET (Historico))
+    transferencia_realizada = models.ForeignKey('ContaPagar', on_delete=models.SET (Historico.historico_operacao()))
+    saque = models.ForeignKey('ContaPagar', on_delete=models.SET (Historico.historico_operacao()))
 
 
-        class PagamentoRecebido(Pagamento):
-            conta = models.ForeignKey('ContaReceber', on_delete=models.SET (Historico))
+class PagamentoRecebido(Pagamento):
+    conta = models.ForeignKey('ContaReceber', on_delete=models.SET (Historico.historico_operacao()))
 
-            deposito = models.ForeignKey('ContaReceber', on_delete=models.SET (Historico))
-            transferencia_recebida = models.ForeignKey('ContaReceber', on_delete=models.SET (Historico))
+    deposito = models.ForeignKey('ContaReceber', on_delete=models.SET (Historico.historico_operacao()))
+    transferencia_recebida = models.ForeignKey('ContaReceber', on_delete=models.SET (Historico.historico_operacao()))
 
-        @has_permission_decorator('gerente', 'cliente')    
-        def solicitacao_extrato(self, request, usuario):
-            input_data_inicial = input('DATA INICIAL:')
-            input_data_final = input('DATA FINAL: ')
-            data_inicial = datetime.strptime(input_data_inicial, '%d/%m/%y')
-            data_final = datetime.strptime(input_data_final, '%d/%m/%y')
+    @has_permission_decorator('gerente', 'cliente')    
+    def solicitacao_extrato(self, request, usuario):
+        input_data_inicial = input('DATA INICIAL:')
+        input_data_final = input('DATA FINAL: ')
+        data_inicial = datetime.strptime(input_data_inicial, '%d/%m/%y')
+        data_final = datetime.strptime(input_data_final, '%d/%m/%y')
 
-            diferenca = data_final.date() - data_inicial.date()
-            print(diferenca.days) # diferença em dias
+        diferenca = data_final.date() - data_inicial.date()
+        print(diferenca.days) # diferença em dias
             
-            while True:
-                try:
-                    input_data_inicial = input('DATA INICIAL: ')
-                    data_inicial = datetime.strptime(input_data_inicial, '%d/%m/%y')
-                    input_data_final = input('DATA FINAL: ')
-                    data_final = datetime.strptime(input_data_final, '%d/%m/%y')
-                    break
-                except ValueError:
-                    print('Data em formato inválido, tente novamente')
+        while True:
+            try:
+                input_data_inicial = input('DATA INICIAL: ')
+                data_inicial = datetime.strptime(input_data_inicial, '%d/%m/%y')
+                input_data_final = input('DATA FINAL: ')
+                data_final = datetime.strptime(input_data_final, '%d/%m/%y')
+                break
+            except ValueError:
+                print('Data em formato inválido, tente novamente')
                     
-            self.horario_transferencia_realizada = datetime.now()
-            self.horario_transferencia_recebida = datetime.now()
-            self.horario_deposito = datetime.now()
-            self.horario_saque = datetime.now()
+        self.horario_transferencia_realizada = datetime.now()
+        self.horario_transferencia_recebida = datetime.now()
+        self.horario_deposito = datetime.now()
+        self.horario_saque = datetime.now()
 
-            self.valor_transferencia_realizada
-            self.valor_transferencia_recebida
-            self.valor_depósito
-            self.valor_saque
+        self.valor_transferencia_realizada
+        self.valor_transferencia_recebida
+        self.valor_depósito
+        self.valor_saque
 
 
-            return ()
+        return ()
 
 class Gerenciar_transacoes(models.Model):
 
@@ -243,18 +252,18 @@ class Gerenciar_transacoes(models.Model):
         else:
             return (self.realizar_transferencia)
 
-    class Saque(models.Model):
-        horario_saque = datetime.now()
+class Saque(models.Model):
+    horario_saque = datetime.now()
 
-        @has_permission_decorator('gerente', 'cliente')
-        def __init__(self, valor_total_conta):
-            self.valor_total_conta = self.saldo_atual
-            self.ultima_atualizacao = (self.saldo_atual - self.valor_transferencia) + self.valor_deposito - self.valor_saque
-            if valor_total_conta == 0.00 & valor_total_conta < self.valor_saque:
-                return ('Saldo insuficiente', self.valor_total_conta)
-            else:
-                def realizar_saque (self):
-                    self.horario_saque = datetime.now()
-                    return ('Valor sacado com sucesso!', self.valor_saque == True)
+    @has_permission_decorator('gerente', 'cliente')
+    def __init__(self, valor_total_conta):
+        self.valor_total_conta = self.saldo_atual
+        self.ultima_atualizacao = (self.saldo_atual - self.valor_transferencia) + self.valor_deposito - self.valor_saque
+        if valor_total_conta == 0.00 & valor_total_conta < self.valor_saque:
+            return ('Saldo insuficiente', self.valor_total_conta)
+        else:
+            def realizar_saque (self):
+                self.horario_saque = datetime.now()
+                return ('Valor sacado com sucesso!', self.valor_saque == True)
 
 

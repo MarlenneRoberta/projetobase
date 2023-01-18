@@ -3,6 +3,7 @@ from django.contrib.admin.options import ModelAdmin, TabularInline
 from django.utils.translation import ugettext_lazy as _
 from models import Pessoa, Historico, Conta, ContaPagar, ContaReceber,\
      PagamentoPago, PagamentoRecebido
+from taggit.managers import TaggableManager
 
 class AdminPessoa(ModelAdmin):
     list_display = ('cpf','senha',)
@@ -11,17 +12,17 @@ class AdminHistorico(ModelAdmin):
     list_display = ('descricao',)
 
 class AdminConta(ModelAdmin):
-    list_display = ('data_vencimento','valor','status','operacao','historico','pessoa')
+    list_display = ('data_vencimento', 'valor', 'status', 'operacao', 'historico', 'pessoa')
     search_fields = ('descricao',)
-    list_filter = ('data_vencimento','status','operacao','historico','pessoa',)
+    list_filter = ('data_vencimento', 'status', 'operacao', 'historico', 'pessoa',)
 
 class InlinePagamentoPago(TabularInline):
     model = PagamentoPago
 
 class AdminContaPagar(ModelAdmin):
-    list_display = ('data_vencimento','valor','status','historico','pessoa')
+    list_display = ('data_vencimento', 'valor', 'status', 'historico', 'pessoa')
     search_fields = ('descricao',)
-    list_filter = ('data_vencimento','status','historico','pessoa',)
+    list_filter = ('data_vencimento', 'status', 'historico', 'pessoa',)
     exclude = ['operacao',]
     inlines = [InlinePagamentoPago,]
     date_hierarchy = 'data_vencimento'
@@ -30,9 +31,9 @@ class InlinePagamentoRecebido(TabularInline):
     model = PagamentoRecebido
 
 class AdminContaReceber(ModelAdmin):
-    list_display = ('data_vencimento','valor','status','historico','pessoa')
+    list_display = ('data_vencimento', 'valor', 'status', 'historico', 'pessoa')
     search_fields = ('descricao',)
-    list_filter = ('data_vencimento','status','historico','pessoa',)
+    list_filter = ('data_vencimento', 'status', 'historico', 'pessoa',)
     exclude = ['operacao',]
     inlines = [InlinePagamentoRecebido,]
     date_hierarchy = 'data_vencimento'
